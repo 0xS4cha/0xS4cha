@@ -1,10 +1,4 @@
 <div align="center">
-  <img height="150" src="https://cdn.discordapp.com/attachments/1276573907192774656/1424506484753956874/logo.png?ex=68e4328c&is=68e2e10c&hm=b51a5e692ea8b7139ae663845b1c6c5208f412b88e39f6c9f9ca59f5ad35ec05&"  />
-</div>
-
-###
-
-<div align="center">
   <a href="https://discord.gg/9TSgWRNqXZ" target="_blank">
     <img src="https://img.shields.io/static/v1?message=Discord&logo=discord&label=&color=7289DA&logoColor=white&labelColor=&style=for-the-badge" height="25" alt="discord logo"  />
   </a>
@@ -69,3 +63,4 @@
 </div>
 
 ###
+
