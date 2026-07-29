@@ -78,7 +78,7 @@ MON = ["jan", "feb", "mar", "apr", "may", "jun",
 
 ABOUT = dict(
     name="0xS4cha",
-    title="Freelance deveoper",
+    title="Freelance developer",
     bio=[
         "Passionate about FiveM development, currently studying at 42.",
         "Fascinated by astronomy, science, and everything that pushes the boundaries of technology.",
