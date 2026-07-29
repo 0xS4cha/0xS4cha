@@ -13,7 +13,13 @@ API = "https://api.github.com/graphql"
 QUERY = """
 query($login: String!, $from: DateTime!, $to: DateTime!) {
   user(login: $login) {
+    followers { totalCount }
+    following { totalCount }
     contributionsCollection(from: $from, to: $to) {
+      totalCommitContributions
+      totalIssueContributions
+      totalPullRequestContributions
+      totalPullRequestReviewContributions
       contributionCalendar {
         totalContributions
         weeks { contributionDays { contributionCount date weekday } }
@@ -77,11 +83,12 @@ MON = ["jan", "feb", "mar", "apr", "may", "jun",
 
 
 ABOUT = dict(
-    name="0xS4cha",
+    name=os.environ.get("GH_LOGIN", "0xS4cha"),
     title="Freelance developer",
     bio=[
         "Passionate about FiveM development, currently studying at 42.",
-        "Fascinated by astronomy, science, and everything that pushes the boundaries of technology.",
+        "Fascinated by astronomy, science",
+        "and everything that pushes the boundaries of technology."
     ],
     facts=[
         ("based in", "Paris &amp; Lyon, FR"),
@@ -161,12 +168,11 @@ def languages(repos):
         for e in edges:
             name = e["node"]["name"]
             by_size[name] = by_size.get(name, 0) + e["size"]
-        if edges:                       # primary language of the repo
+        if edges:
             top = edges[0]["node"]["name"]
             by_repo[top] = by_repo.get(top, 0) + 1
 
     def rank(d):
-        # sort by value, then name, so equal values never reorder between runs
         return sorted(d.items(), key=lambda kv: (-kv[1], kv[0]))[:5]
 
     return rank(by_size), rank(by_repo)
@@ -198,13 +204,41 @@ def weekday_totals(days):
     return totals
 
 
+def month_totals(days):
+    """Contributions summed by calendar month, oldest to newest.
+
+    Keeps insertion order (rather than sorting keys) so the chart reads
+    chronologically left-to-right instead of alphabetically.
+    """
+    totals, order = {}, []
+    for d in days:
+        m = d["date"][:7]
+        if m not in totals:
+            totals[m] = 0
+            order.append(m)
+        totals[m] += d["contributionCount"]
+    return [(m, totals[m]) for m in order]
+
+
+def activity_breakdown(cc):
+    """Commits / PRs / reviews / issues opened in the window, high to low."""
+    rows = [
+        ("commits", cc.get("totalCommitContributions", 0)),
+        ("pull requests", cc.get("totalPullRequestContributions", 0)),
+        ("reviews", cc.get("totalPullRequestReviewContributions", 0)),
+        ("issues", cc.get("totalIssueContributions", 0)),
+    ]
+    return sorted(rows, key=lambda kv: -kv[1])
+
+
 def summarise(user):
     cal = user["contributionsCollection"]["contributionCalendar"]
     weeks = [w["contributionDays"] for w in cal["weeks"]]
     days = [d for w in weeks for d in w]
     weekly = [sum(d["contributionCount"] for d in w) for w in weeks]
     cur, best = streaks(days)
-    by_size, by_repo = languages(user["repositories"]["nodes"])
+    repos = user["repositories"]["nodes"]
+    by_size, by_repo = languages(repos)
     return dict(
         total=cal["totalContributions"],
         active=sum(1 for d in days if d["contributionCount"] > 0),
@@ -212,11 +246,14 @@ def summarise(user):
         weekly=weekly, weeks=weeks,
         current=cur, longest=best,
         by_size=by_size, by_repo=by_repo,
-        top_repos=top_repos(user["repositories"]["nodes"]),
-        by_weekday=weekday_totals(days))
+        top_repos=top_repos(repos),
+        by_weekday=weekday_totals(days),
+        by_month=month_totals(days),
+        activity=activity_breakdown(user["contributionsCollection"]),
+        followers=user["followers"]["totalCount"],
+        following=user["following"]["totalCount"],
+        stars=sum(r.get("stargazerCount", 0) for r in repos))
 
-
-# ---------------------------------------------------------------- drawing
 
 def style(extra="", font=None):
     def block(t):
@@ -367,6 +404,96 @@ def draw_streak(s):
     return "".join(p)
 
 
+def draw_social(s):
+    """Followers, following, and stars earned across public repos.
+
+    Three columns instead of draw_streak's two: x = colw*i + LEFT still
+    lands the first column at LEFT and later ones past each hairline,
+    exactly as it does for the two-column case.
+    """
+    H = 96
+    cells = [(s["followers"], "followers"),
+             (s["following"], "following"),
+             (s["stars"], "stars earned")]
+    n = len(cells)
+    colw = WIDTH / n
+
+    p = [head(WIDTH, H)]
+    for i in range(1, n):
+        x = colw * i
+        p.append(f'<line x1="{x:.0f}" y1="16" x2="{x:.0f}" y2="80" '
+                 f'class="u-s" stroke-width="1" opacity="0">{fade(0.20)}</line>')
+    for i, (val, lab) in enumerate(cells):
+        x = colw * i + LEFT
+        p.append(f'<g opacity="0">{fade(0.12 + i * 0.14)}'
+                 + label(x, 44, f"{val}", 30, "e-f", extra=' font-weight="600"')
+                 + label(x, 64, lab, 11) + '</g>')
+    p.append("</svg>")
+    return "".join(p)
+
+
+def draw_activity(s):
+    """Contribution mix: commits, pull requests, reviews, issues."""
+    rows = s["activity"]
+    H = 20 + max(len(rows), 1) * 24 + 6
+    name_w, val_w = 130, 44
+    bar_max = WIDTH - LEFT - name_w - val_w - 10
+
+    p = [head(WIDTH, H)]
+    p.append(f'<g opacity="0">{fade(0.10)}'
+             + label(LEFT, 12, "CONTRIBUTION MIX", 9, "m-f",
+                     extra=' letter-spacing="1.3"') + '</g>')
+    top = max((v for _, v in rows), default=0) or 1
+    clip, cursor = wipe("ra", LEFT + name_w, 20, bar_max,
+                        len(rows) * 24, 0.34, 1.05)
+    p.append(clip)
+    for i, (name, val) in enumerate(rows):
+        y = 24 + i * 24
+        p.append(f'<g opacity="0">{fade(0.24 + i * 0.06)}'
+                 + label(LEFT, y + 8, name, 11, "e-f")
+                 + label(WIDTH, y + 8, f"{val}", 11, "m-f", "end") + '</g>')
+        p.append(f'<g clip-path="url(#ra)">'
+                 + hbar(LEFT + name_w, y, bar_max * val / top, 7)
+                 + '</g>')
+    p.append(cursor)
+    p.append("</svg>")
+    return "".join(p)
+
+
+def draw_months(s):
+    """Contributions summed by calendar month over the trailing year."""
+    rows = s["by_month"]
+    H = 20 + max(len(rows), 1) * 20 + 6
+    name_w, val_w = 60, 34
+    bar_max = WIDTH - LEFT - name_w - val_w - 10
+
+    p = [head(WIDTH, H)]
+    p.append(f'<g opacity="0">{fade(0.10)}'
+             + label(LEFT, 12, "BY MONTH", 9, "m-f",
+                     extra=' letter-spacing="1.3"') + '</g>')
+    if not rows:
+        p.append("</svg>")
+        return "".join(p)
+
+    top = max(v for _, v in rows) or 1
+    clip, cursor = wipe("rm", LEFT + name_w, 20, bar_max,
+                        len(rows) * 20, 0.34, 1.05)
+    p.append(clip)
+    for i, (m, val) in enumerate(rows):
+        y = 22 + i * 20
+        yy, mm = m.split("-")
+        lab = MON[int(mm) - 1] + (f" &#8217;{yy[2:]}" if mm == "01" or i == 0 else "")
+        p.append(f'<g opacity="0">{fade(0.24 + i * 0.05)}'
+                 + label(LEFT, y + 8, lab, 11)
+                 + label(WIDTH, y + 8, f"{val}", 11, "m-f", "end") + '</g>')
+        p.append(f'<g clip-path="url(#rm)">'
+                 + hbar(LEFT + name_w, y, bar_max * val / top, 7)
+                 + '</g>')
+    p.append(cursor)
+    p.append("</svg>")
+    return "".join(p)
+
+
 def draw_langs(s):
     """Two small charts: share of bytes, and count of repos by main language."""
     rows = max(len(s["by_size"]), len(s["by_repo"]), 1)
@@ -490,7 +617,7 @@ def draw_about(cfg=ABOUT):
         y = bio_start + len(bio) * BIO_LH
 
     facts_start = y + (14 if bio else 6)
-    fact_rows = -(-len(facts) // 2)          # two columns, ceil division
+    fact_rows = -(-len(facts) // 2)
     if facts:
         y = facts_start + fact_rows * FACT_LH
 
@@ -501,7 +628,6 @@ def draw_about(cfg=ABOUT):
 
     H = int((tags_bottom if tags else y) + 14)
 
-    # sequential delays, one block after the previous has finished revealing
     d_name, d_title = 0.10, 0.24
     d_bio = d_title + 0.14
     d_facts = d_bio + (len(bio) * 0.08 + 0.14 if bio else 0)
@@ -655,8 +781,10 @@ def main():
     files = {"stats.svg": draw_stats(s), "streak.svg": draw_streak(s),
              "langs.svg": draw_langs(s), "year.svg": draw_year(s),
              "repos.svg": draw_repos(s), "weekday.svg": draw_weekday(s),
-             "about.svg": draw_about()}
-    for word in ("about", "stack", "projects", "stats", "about this page"):
+             "months.svg": draw_months(s), "activity.svg": draw_activity(s),
+             "social.svg": draw_social(s), "about.svg": draw_about()}
+    for word in ("about", "stack", "activity", "projects", "social",
+                 "stats", "about this page"):
         files[f"hd-{word.replace(' ', '-')}.svg"] = draw_heading(word)
 
     changed = [n for n, svg in files.items()

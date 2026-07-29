@@ -26,6 +26,22 @@
 
 </div>
 
+<img src="./hd-social.svg" width="620" alt="social"/>
+
+<div align="center">
+
+<img src="./social.svg" width="620" alt="Followers, following and stars earned"/>
+
+</div>
+
+<img src="./hd-activity.svg" width="620" alt="social"/>
+
+<div align="center">
+
+<img src="./activity.svg" width="620" alt="Activitiy"/>
+
+</div>
+
 <img src="./hd-stats.svg" width="620" alt="stats"/>
 
 <div align="center">
