@@ -80,8 +80,8 @@ ABOUT = dict(
     name="0xS4cha",
     title="Freelance deveoper",
     bio=[
-        "Building things that ship, breaking things that don't.",
-        "Currently deep in distributed systems and generative UI.",
+        "Passionate about FiveM development, currently studying at 42.",
+        "Fascinated by astronomy, science, and everything that pushes the boundaries of technology.",
     ],
     facts=[
         ("based in", "Paris &amp; Lyon, FR"),
