@@ -11,14 +11,20 @@
 
 <img src="./hd-about.svg" width="620" alt="about"/>
 
+<div align="center">
+
 <img src="./about.svg" width="620" alt="Me"/>
+
+</div>
 
 <img src="./hd-projects.svg" width="620" alt="projects"/>
 
 
+<div align="center">
 
 <img src="./repos.svg" width="620" alt="The last year, one character per day"/>
 
+</div>
 
 <img src="./hd-stats.svg" width="620" alt="stats"/>
 
