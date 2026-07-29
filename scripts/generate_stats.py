@@ -90,7 +90,7 @@ ABOUT = dict(
         ("reachable at", "sservant@student.42lyon.fr"),
     ],
     tags=[
-        "python", "rust", "lua/luau", "react"
+        "python", "rust", "lua/luau", "react",
         "typescript", "docker", "SQL"],
 )
 
