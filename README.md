@@ -17,6 +17,14 @@
 
 </div>
 
+<img src="./hd-stack.svg" width="620" alt="stack"/>
+
+<div align="center">
+
+<img src="./stack.svg" width="620" alt="Tech Stack"/>
+
+</div>
+
 <img src="./hd-projects.svg" width="620" alt="projects"/>
 
 

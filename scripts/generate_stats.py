@@ -102,6 +102,12 @@ ABOUT = dict(
 )
 
 
+STACK = dict(
+    languages=["python", "rust", "lua/luau", "typescript", "c/c++", "sql", "shell"],
+    technologies=["fivem api", "react", "docker", "git", "linux", "nodejs"]
+)
+
+
 def window():
     today = datetime.now(timezone.utc).date()
     start = today - timedelta(days=364)
@@ -361,6 +367,12 @@ def draw_stats(s):
     span = base - top
     step = WIDTH / max(len(weekly) - 1, 1)
     pts = [(i * step, base - (v / peak) * span) for i, v in enumerate(weekly)]
+    
+    for y_val in (top, top + span / 2, base):
+        p.append(f'<line x1="0" y1="{y_val:.1f}" x2="{WIDTH}" y2="{y_val:.1f}" '
+                 f'class="u-s" stroke-width="1" stroke-dasharray="2 4" opacity="0">'
+                 f'{fade(0.15)}</line>')
+
     clip, cursor = wipe("rs", 0, top - 6, WIDTH, span + 8, 0.50)
     p.append(clip)
     p.append('<g clip-path="url(#rs)">')
@@ -396,10 +408,22 @@ def draw_streak(s):
              f'class="u-s" stroke-width="1" opacity="0">{fade(0.20)}</line>')
     for i, (val, lab, span) in enumerate(cells):
         x = LEFT if i == 0 else mid + LEFT
+        icon_path = (
+            "M12 2C11.5 3 10.3 5.3 10.3 7C10.3 8.7 11.2 10 12 10C12.8 10 13.7 8.7 13.7 7C13.7 5.3"
+            " 12.5 3 12 2ZM17 12C15.7 9.8 14 8.6 14 8.6C14 8.6 13 9.6 12.5 10.7C12 11.8 12.8 13.3"
+            " 11.5 14.6C10.2 13.3 11 11.8 10.5 10.7C10 9.6 9 8.6 9 8.6C9 8.6 7.3 9.8 6 12C4.7"
+            " 14.4 5.6 17.7 8.2 19.5C9.9 20.6 12 20.6 13.7 19.5C16.3 17.7 17.3 14.4 17 12Z"
+            if i == 0 else
+            "M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v3c0 2.44 1.72 4.44 4 4.9V19h-3v2h16v-2h-3v-4.1"
+            "c2.28-.46 4-2.46 4-4.9V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z"
+        )
         p.append(f'<g opacity="0">{fade(0.12 + i * 0.14)}'
-                 + label(x, 44, f"{val}", 34, "e-f", extra=' font-weight="600"')
-                 + label(x, 64, lab, 11)
-                 + label(x, 80, span, 10) + '</g>')
+                 f'<svg x="{x:.0f}" y="32" width="24" height="24" viewBox="0 0 24 24" fill="none">'
+                 f'<path d="{icon_path}" class="d-f"/>'
+                 f'</svg>'
+                 + label(x + 36, 44, f"{val}", 34, "e-f", extra=' font-weight="600"')
+                 + label(x + 36, 64, lab, 11)
+                 + label(x + 36, 80, span, 10) + '</g>')
     p.append("</svg>")
     return "".join(p)
 
@@ -425,9 +449,19 @@ def draw_social(s):
                  f'class="u-s" stroke-width="1" opacity="0">{fade(0.20)}</line>')
     for i, (val, lab) in enumerate(cells):
         x = colw * i + LEFT
+        icon_path = (
+            "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+            if i == 0 else
+            "M9 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm11-4V7h-2v3h-3v2h3v3h2v-3h3v-2h-3z"
+            if i == 1 else
+            "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+        )
         p.append(f'<g opacity="0">{fade(0.12 + i * 0.14)}'
-                 + label(x, 44, f"{val}", 30, "e-f", extra=' font-weight="600"')
-                 + label(x, 64, lab, 11) + '</g>')
+                 f'<svg x="{x:.0f}" y="32" width="24" height="24" viewBox="0 0 24 24" fill="none">'
+                 f'<path d="{icon_path}" class="d-f"/>'
+                 f'</svg>'
+                 + label(x + 36, 44, f"{val}", 30, "e-f", extra=' font-weight="600"')
+                 + label(x + 36, 64, lab, 11) + '</g>')
     p.append("</svg>")
     return "".join(p)
 
@@ -453,6 +487,7 @@ def draw_activity(s):
                  + label(LEFT, y + 8, name, 11, "e-f")
                  + label(WIDTH, y + 8, f"{val}", 11, "m-f", "end") + '</g>')
         p.append(f'<g clip-path="url(#ra)">'
+                 + hbar(LEFT + name_w, y, bar_max, 7, cls="w")
                  + hbar(LEFT + name_w, y, bar_max * val / top, 7)
                  + '</g>')
     p.append(cursor)
@@ -487,6 +522,7 @@ def draw_months(s):
                  + label(LEFT, y + 8, lab, 11)
                  + label(WIDTH, y + 8, f"{val}", 11, "m-f", "end") + '</g>')
         p.append(f'<g clip-path="url(#rm)">'
+                 + hbar(LEFT + name_w, y, bar_max, 7, cls="w")
                  + hbar(LEFT + name_w, y, bar_max * val / top, 7)
                  + '</g>')
     p.append(cursor)
@@ -524,6 +560,7 @@ def draw_langs(s):
                      + label(gx + colw - 6, y + 8, shown, 11, "m-f", "end")
                      + '</g>')
             p.append(f'<g clip-path="url(#{cid})">'
+                     + hbar(gx + name_w, y, bar_max, 7, cls="w")
                      + hbar(gx + name_w, y, bar_max * val / top, 7)
                      + '</g>')
         p.append(cursor)
@@ -558,6 +595,7 @@ def draw_repos(s):
                  + label(WIDTH, y + 8, f"&#9733; {stars}", 11, "m-f", "end")
                  + '</g>')
         p.append(f'<g clip-path="url(#rr)">'
+                 + hbar(LEFT + name_w, y, bar_max, 7, cls="w")
                  + hbar(LEFT + name_w, y, bar_max * stars / top, 7)
                  + '</g>')
     p.append(cursor)
@@ -587,6 +625,7 @@ def draw_weekday(s):
                  + label(LEFT, y + 8, lab, 11, cls)
                  + label(WIDTH, y + 8, f"{val}", 11, "m-f", "end") + '</g>')
         p.append(f'<g clip-path="url(#rw)">'
+                 + hbar(LEFT + name_w, y, bar_max, 7, cls="w")
                  + hbar(LEFT + name_w, y, bar_max * val / top, 7)
                  + '</g>')
     p.append(cursor)
@@ -658,8 +697,59 @@ def draw_about(cfg=ABOUT):
     for i, (text, x, ty, w) in enumerate(tag_rows):
         p.append(f'<g opacity="0">{fade(d_tags + i * 0.045)}'
                  f'<rect x="{x:.1f}" y="{ty:.1f}" width="{w:.1f}" '
-                 f'height="{TAG_H}" rx="{TAG_H / 2:.0f}" fill="none" '
-                 f'class="u-s" stroke-width="1"/>'
+                 f'height="{TAG_H}" rx="{TAG_H / 2:.0f}" '
+                 f'class="w u-s" stroke-width="1"/>'
+                 f'<text x="{x + w / 2:.1f}" y="{ty + TAG_H * 0.67:.1f}" '
+                 f'font-size="10" class="d-f" text-anchor="middle">'
+                 f'{text}</text></g>')
+
+    p.append("</svg>")
+    return "".join(p)
+
+
+def draw_stack(cfg=STACK):
+    """Static stack card: categories of skills/tools."""
+    languages = cfg.get("languages", [])
+    technologies = cfg.get("technologies", [])
+
+    TAG_H, TAG_GAP = 20, 10
+    tags_start = 24
+
+    col_w = 260
+    gap_col = 32
+    col1_x = LEFT
+    col2_x = LEFT + col_w + gap_col
+
+    placed1, bottom_y1 = _flow(languages, col1_x, tags_start, col_w, h=TAG_H, gap_y=TAG_GAP)
+    placed2, bottom_y2 = _flow(technologies, col2_x, tags_start, col_w, h=TAG_H, gap_y=TAG_GAP)
+
+    H = int(max(bottom_y1, bottom_y2, tags_start + TAG_H) + 14)
+
+    d_headers = 0.10
+    d_tags = d_headers + 0.14
+
+    p = [head(WIDTH, H)]
+    p.append(f'<g opacity="0">{fade(d_headers)}'
+             + label(col1_x, 12, "LANGUAGES", 9, "m-f", extra=' letter-spacing="1.3"')
+             + '</g>')
+    p.append(f'<g opacity="0">{fade(d_headers)}'
+             + label(col2_x, 12, "TECHNOLOGIES", 9, "m-f", extra=' letter-spacing="1.3"')
+             + '</g>')
+
+    for i, (text, x, ty, w) in enumerate(placed1):
+        p.append(f'<g opacity="0">{fade(d_tags + i * 0.045)}'
+                 f'<rect x="{x:.1f}" y="{ty:.1f}" width="{w:.1f}" '
+                 f'height="{TAG_H}" rx="{TAG_H / 2:.0f}" '
+                 f'class="w u-s" stroke-width="1"/>'
+                 f'<text x="{x + w / 2:.1f}" y="{ty + TAG_H * 0.67:.1f}" '
+                 f'font-size="10" class="d-f" text-anchor="middle">'
+                 f'{text}</text></g>')
+
+    for i, (text, x, ty, w) in enumerate(placed2):
+        p.append(f'<g opacity="0">{fade(d_tags + i * 0.045)}'
+                 f'<rect x="{x:.1f}" y="{ty:.1f}" width="{w:.1f}" '
+                 f'height="{TAG_H}" rx="{TAG_H / 2:.0f}" '
+                 f'class="w u-s" stroke-width="1"/>'
                  f'<text x="{x + w / 2:.1f}" y="{ty + TAG_H * 0.67:.1f}" '
                  f'font-size="10" class="d-f" text-anchor="middle">'
                  f'{text}</text></g>')
@@ -782,7 +872,8 @@ def main():
              "langs.svg": draw_langs(s), "year.svg": draw_year(s),
              "repos.svg": draw_repos(s), "weekday.svg": draw_weekday(s),
              "months.svg": draw_months(s), "activity.svg": draw_activity(s),
-             "social.svg": draw_social(s), "about.svg": draw_about()}
+             "social.svg": draw_social(s), "about.svg": draw_about(),
+             "stack.svg": draw_stack()}
     for word in ("about", "stack", "activity", "projects", "social",
                  "stats", "about this page"):
         files[f"hd-{word.replace(' ', '-')}.svg"] = draw_heading(word)
