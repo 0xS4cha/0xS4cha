@@ -4,6 +4,7 @@ import base64
 import functools
 import json
 import os
+import re
 import sys
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
@@ -94,11 +95,7 @@ ABOUT = dict(
         ("based in", "Paris &amp; Lyon, FR"),
         ("focus", "AI &amp; Data science"),
         ("working on", "42 Common core"),
-        ("reachable at", "sservant@student.42lyon.fr"),
     ],
-    tags=[
-        "python", "rust", "lua/luau", "react",
-        "typescript", "docker", "SQL"],
 )
 
 
@@ -132,6 +129,27 @@ def fetch(login, token):
     if not user:
         raise SystemExit(f"no such user: {login}")
     return user
+
+
+def fetch_views(login):
+    """Profile view count, read from the komarev counter.
+
+    The README embeds that counter as an invisible pixel, so every profile
+    visit bumps it; its own badge can't be themed, so the number is scraped
+    from it here and redrawn in the house style. This fetch counts as one view
+    a day. Returns None when the service is unreachable — a missing number
+    must never fail the whole refresh.
+    """
+    req = urllib.request.Request(
+        f"https://komarev.com/ghpvc/?username={login}",
+        headers={"User-Agent": f"{login}-profile-stats"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            body = r.read().decode("utf-8", "replace")
+    except OSError:
+        return None
+    nums = re.findall(r">([\d,]+)</text>", body)
+    return int(nums[-1].replace(",", "")) if nums else None
 
 
 def pretty(iso):
@@ -427,16 +445,18 @@ def draw_streak(s):
 
 
 def draw_social(s):
-    """Followers, following, and stars earned across public repos.
+    """Followers, following, stars earned, and profile views.
 
-    Three columns instead of draw_streak's two: x = colw*i + LEFT still
+    Four columns instead of draw_streak's two: x = colw*i + LEFT still
     lands the first column at LEFT and later ones past each hairline,
     exactly as it does for the two-column case.
     """
     H = 96
+    views = s.get("views")
     cells = [(s["followers"], "followers"),
              (s["following"], "following"),
-             (s["stars"], "stars earned")]
+             (s["stars"], "stars earned"),
+             (views if views is not None else "&#8212;", "views")]
     n = len(cells)
     colw = WIDTH / n
 
@@ -453,6 +473,9 @@ def draw_social(s):
             "M9 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm11-4V7h-2v3h-3v2h3v3h2v-3h3v-2h-3z"
             if i == 1 else
             "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+            if i == 2 else
+            "M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5z"
+            "M12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
         )
         p.append(f'<g opacity="0">{fade(0.12 + i * 0.14)}'
                  f'<svg x="{x:.0f}" y="32" width="24" height="24" viewBox="0 0 24 24" fill="none">'
@@ -866,6 +889,7 @@ def main():
     out_dir = os.environ.get("OUT_DIR", ".")
 
     s = summarise(fetch(login, token))
+    s["views"] = fetch_views(login)
     files = {"stats.svg": draw_stats(s), "streak.svg": draw_streak(s),
              "langs.svg": draw_langs(s), "year.svg": draw_year(s),
              "repos.svg": draw_repos(s), "weekday.svg": draw_weekday(s),
