@@ -37,7 +37,7 @@
 
 <div align="center">
 
-<img src="./social.svg" width="620" alt="Followers, following, stars earned and profile views"/>
+<img src="./social.svg" width="620" alt="Followers, following and stars earned"/>
 
 </div>
 

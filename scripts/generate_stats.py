@@ -456,7 +456,9 @@ def draw_social(s):
     cells = [(s["followers"], "followers"),
              (s["following"], "following"),
              (s["stars"], "stars earned"),
-             (views if views is not None else "&#8212;", "views")]
+             # Views hidden for now; still fetched so the counter keeps running.
+             # (views if views is not None else "&#8212;", "views"),
+             ]
     n = len(cells)
     colw = WIDTH / n
 
