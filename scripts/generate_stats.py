@@ -141,7 +141,7 @@ def fetch_views(login):
     must never fail the whole refresh.
     """
     req = urllib.request.Request(
-        f"https://komarev.com/ghpvc/?username={login}",
+        f"https://visitor-badge.laobi.icu/badge?page_id={login}.{login}&",
         headers={"User-Agent": f"{login}-profile-stats"})
     try:
         with urllib.request.urlopen(req, timeout=15) as r:
@@ -457,7 +457,7 @@ def draw_social(s):
              (s["following"], "following"),
              (s["stars"], "stars earned"),
              # Views hidden for now; still fetched so the counter keeps running.
-             # (views if views is not None else "&#8212;", "views"),
+             (views if views is not None else "&#8212;", "views"),
              ]
     n = len(cells)
     colw = WIDTH / n
